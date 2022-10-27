@@ -5,11 +5,11 @@ import click
 import arg_eval
 import arg_eval.io as io
 from arg_eval.eval import eval_agg, eval_ind
-from arg_eval.metrics import Accuracy, NumTopics, NumQuestions
+from arg_eval.metrics import Accuracy, NumTopics, NumQuestions, RougeL
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-DEFAULT_AGG_METRICS = [NumTopics, NumQuestions, Accuracy]
-DEFAULT_IND_METRICS = [Accuracy]
+DEFAULT_AGG_METRICS = [NumTopics, NumQuestions, Accuracy, RougeL]
+DEFAULT_IND_METRICS = [Accuracy, RougeL]
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -36,15 +36,14 @@ def cli(truths_file: Path, questions_file: Path, responses_file: Path, agg: bool
     questions = io.load_questions(questions_file)
     responses = io.load_responses(responses_file)
 
-    if agg:
-        for task, a in eval_agg(truths, responses, questions, DEFAULT_AGG_METRICS).items():
+    if not agg:
+        for task, a in eval_ind(truths, responses, questions, DEFAULT_IND_METRICS).items():
             for prop, b in a.items():
                 print(f"{task}#{prop}")
                 for k, v in b.items():
                     print(f"{k}\t{v}")
-        return
 
-    for task, a in eval_ind(truths, responses, questions, DEFAULT_IND_METRICS).items():
+    for task, a in eval_agg(truths, responses, questions, DEFAULT_AGG_METRICS).items():
         for prop, b in a.items():
             print(f"{task}#{prop}")
             for k, v in b.items():

@@ -1,7 +1,7 @@
 from typing import List, Dict, Type, Tuple
 
 from arg_eval.io import Responses, Response, Truths, QuestionBank, QuestionResponse
-from arg_eval.metrics import MetricMixin
+from arg_eval.metrics import MetricMixin, StringMetricMixin, NumericalMetricMixin
 
 
 def load_eval(truths: Truths, responses: Responses, questions: QuestionBank) -> Dict[str, Dict[str, List[Tuple[QuestionResponse, Response]]]]:
@@ -41,8 +41,8 @@ def eval_agg(truths: Truths, responses: Responses, questions: QuestionBank, metr
     results = {}
     for task, d in struct.items():
         results[task] = {}
-        for property, pairs in d.items():
-            results[task][property] = {}
+        for prop, pairs in d.items():
+            results[task][prop] = {}
             t, r = [], []
             for truth, response in pairs:
                 t.append(truth)
@@ -50,7 +50,11 @@ def eval_agg(truths: Truths, responses: Responses, questions: QuestionBank, metr
 
             for metric in metrics:
                 m = metric(t, r)
-                results[task][property][m.__class__.__doc__] = m.agg()
+                if isinstance(m, StringMetricMixin) and isinstance(t[0].expected_response, float):
+                    continue
+                if isinstance(m, NumericalMetricMixin) and isinstance(t[0].expected_response, str):
+                    continue
+                results[task][prop][m.__class__.__doc__] = m.agg()
 
     return results
 
@@ -59,12 +63,11 @@ def eval_ind(truths: Truths, responses: List[Response], questions: QuestionBank,
     struct = load_eval(truths, responses, questions)
 
     # Calculate the results.
-    # Calculate the results.
     results = {}
     for task, d in struct.items():
         results[task] = {}
-        for property, pairs in d.items():
-            results[task][property] = {}
+        for prop, pairs in d.items():
+            results[task][prop] = {}
             t, r = [], []
             for truth, response in pairs:
                 t.append(truth)
@@ -73,6 +76,10 @@ def eval_ind(truths: Truths, responses: List[Response], questions: QuestionBank,
             for truth, response in zip(t, r):
                 for metric in metrics:
                     m = metric(truths, responses)
-                    results[task][property][f"{m.__class__.__doc__}#{truth.question_id}${response.topic_id}"] = m.score(truth, response)
+                    if isinstance(m, StringMetricMixin) and isinstance(truth.expected_response, float):
+                        continue
+                    if isinstance(m, NumericalMetricMixin) and isinstance(truth.expected_response, str):
+                        continue
+                    results[task][prop][f"{m.__class__.__doc__}\t{truth.question_id}\t{response.topic_id}"] = m.score(truth, response)
 
     return results

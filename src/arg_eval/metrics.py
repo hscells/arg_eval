@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from rouge_score import rouge_scorer
 
 from arg_eval.io import Truths, Responses, Response, QuestionResponse
 
@@ -17,6 +18,27 @@ class MetricMixin(ABC):
         raise NotImplementedError()
 
 
+class NumericalMetricMixin(MetricMixin):
+
+    @abstractmethod
+    def score(self, truth: QuestionResponse, response: Response) -> float:
+        pass
+
+    @abstractmethod
+    def agg(self) -> float:
+        pass
+
+
+class StringMetricMixin(MetricMixin):
+    @abstractmethod
+    def score(self, truth: QuestionResponse, response: Response) -> float:
+        pass
+
+    @abstractmethod
+    def agg(self) -> float:
+        pass
+
+
 class Accuracy(MetricMixin):
     """acc"""
 
@@ -30,6 +52,22 @@ class Accuracy(MetricMixin):
         for truth, response in zip(self.truths, self.responses):
             num_correct += self.score(truth, response)
         return num_correct / len(self.truths)
+
+
+class RougeL(StringMetricMixin):
+    """rouge-l"""
+
+    def score(self, truth: QuestionResponse, response: Response) -> float:
+        if not isinstance(truth.expected_response, str):
+            return 0.0
+        score = rouge_scorer.RougeScorer(["rougeL"]).score(truth.expected_response, response.response)
+        return score["rougeL"].fmeasure
+
+    def agg(self) -> float:
+        score = 0.0
+        for truth, response in zip(self.truths, self.responses):
+            score += self.score(truth, response)
+        return score / len(self.truths)
 
 
 class NumTopics(MetricMixin):
