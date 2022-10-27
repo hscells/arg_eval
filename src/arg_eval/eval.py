@@ -73,6 +73,6 @@ def eval_ind(truths: Truths, responses: List[Response], questions: QuestionBank,
             for truth, response in zip(t, r):
                 for metric in metrics:
                     m = metric(truths, responses)
-                    results[task][property][f"{m.__class__.__doc__}#{truth.question_id}@{response.topic_id}"] = m.score(truth, response)
+                    results[task][property][f"{m.__class__.__doc__}#{truth.question_id}${response.topic_id}"] = m.score(truth, response)
 
     return results
