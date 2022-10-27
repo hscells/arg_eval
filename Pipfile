@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+arg_eval = { editable = true, path = "." }
+click = "*"
+dataclasses-json = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
